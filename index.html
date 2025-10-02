@@ -141,7 +141,6 @@
         
         let originalImage = null;       // Đối tượng Image gốc đang được hiển thị
         let rotationAngle = 0;          // Góc xoay hiện tại (0, 90, 180, 270)
-        const COLOR_THRESHOLD = 30;     // Ngưỡng phát hiện sự thay đổi màu sắc
         
         // Trạng thái lưu trữ ảnh đã cắt
         let croppedImageFront = null; 
@@ -627,27 +626,39 @@
             // Lấy kích thước canvas sau khi xoay
             const canvasW = canvas.width;
             const canvasH = canvas.height;
+            
+            // Tỷ lệ chuẩn của CCCD (dài x rộng)
+            const cccdRatio = 85.6 / 53.98;
 
-            // Tính toán kích thước khung cắt mặc định (khoảng 70% chiều ngang và chiều cao của ảnh)
-            const defaultCropWidth = canvasW * 0.7;
-            const defaultCropHeight = canvasH * 0.7;
+            let newCropWidth, newCropHeight;
+
+            // Đặt kích thước khung cắt ban đầu
+            if (canvasW / canvasH > cccdRatio) {
+                // Ảnh ngang
+                newCropHeight = canvasH * 0.9;
+                newCropWidth = newCropHeight * cccdRatio;
+            } else {
+                // Ảnh dọc
+                newCropWidth = canvasW * 0.9;
+                newCropHeight = newCropWidth / cccdRatio;
+            }
 
             // Tính toán tọa độ để đặt khung cắt vào giữa ảnh
-            const defaultX = (canvasW - defaultCropWidth) / 2;
-            const defaultY = (canvasH - defaultCropHeight) / 2;
+            const newX = (canvasW - newCropWidth) / 2;
+            const newY = (canvasH - newCropHeight) / 2;
 
             const newCropBox = {
-                x: defaultX,
-                y: defaultY,
-                width: defaultCropWidth,
-                height: defaultCropHeight
+                x: newX,
+                y: newY,
+                width: newCropWidth,
+                height: newCropHeight
             };
 
             // Cập nhật khung cắt và vẽ lại ảnh
             initCropBox(newCropBox);
             drawImage();
 
-            showMessage('Đã đặt khung cắt mặc định ở giữa ảnh. Bạn có thể kéo thả để tinh chỉnh.', 'success');
+            showMessage('Đã đặt khung cắt theo tỷ lệ CCCD ở giữa ảnh. Bạn có thể kéo thả để tinh chỉnh.', 'success');
         });
 
         resetCropButton.addEventListener('click', () => {
@@ -689,7 +700,7 @@
         // Đăng ký sự kiện chạm cho tương tác kéo thả trên mobile
         canvas.addEventListener('touchstart', handleTouchStart);
         canvas.addEventListener('touchmove', handleTouchMove);
-        canvas.addEventListener('touchend', handleTouchEnd);
+        canvas.addEventListener('touch-end', handleTouchEnd);
 
 
         // Ngăn chặn menu chuột phải (đã được chuyển lên đầu cùng với các biện pháp chống xem mã nguồn khác)
