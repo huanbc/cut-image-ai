@@ -278,60 +278,7 @@
         }
         
         /**
-         * Chức năng tự động tìm khung cắt
-         */
-        function autoDetectCrop() {
-            const w = canvas.width;
-            const h = canvas.height;
-            if (w === 0 || h === 0) return null;
-
-            const imageData = ctx.getImageData(0, 0, w, h);
-            const pixels = imageData.data;
-            const sampleColor = [pixels[0], pixels[1], pixels[2]]; 
-            
-            let minX = w, minY = h, maxX = 0, maxY = 0;
-
-            const getPixelColor = (x, y) => {
-                const i = (y * w + x) * 4;
-                return [pixels[i], pixels[i + 1], pixels[i + 2]]; 
-            };
-            const colorsAreDifferent = (color1, color2) => {
-                const rDiff = Math.abs(color1[0] - color2[0]);
-                const gDiff = Math.abs(color1[1] - color2[1]);
-                const bDiff = Math.abs(color1[2] - color2[2]);
-                return (rDiff > COLOR_THRESHOLD || gDiff > COLOR_THRESHOLD || bDiff > COLOR_THRESHOLD);
-            };
-
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    if (colorsAreDifferent(getPixelColor(x, y), sampleColor)) {
-                        minX = Math.min(minX, x);
-                        minY = Math.min(minY, y);
-                        maxX = Math.max(maxX, x);
-                        maxY = Math.max(maxY, y);
-                    }
-                }
-            }
-
-            if (minX >= maxX || minY >= maxY) return null;
-
-            // Thêm đệm và giới hạn
-            const padding = 10;
-            minX = Math.max(0, minX - padding);
-            minY = Math.max(0, minY - padding);
-            maxX = Math.min(w, maxX + padding);
-            maxY = Math.min(h, maxY + padding);
-
-            return {
-                x: minX,
-                y: minY,
-                width: maxX - minX,
-                height: maxY - minY
-            };
-        }
-
-        /**
-         * Thực hiện cắt ảnh theo khung cropBox hiện tại
+         * Hàm thực hiện cắt ảnh theo khung cropBox hiện tại
          */
         function cropImage() {
             if (!originalImage || cropBox.width <= 0 || cropBox.height <= 0) return null;
@@ -677,17 +624,30 @@
                 return;
             }
             
-            const resultBox = autoDetectCrop();
+            // Lấy kích thước canvas sau khi xoay
+            const canvasW = canvas.width;
+            const canvasH = canvas.height;
 
-            if (resultBox && resultBox.width > 50 && resultBox.height > 50) {
-                initCropBox(resultBox);
-                drawImage();
-                showMessage('Đã đề xuất Khung Cắt theo cạnh ảnh. Bạn có thể kéo thả để tinh chỉnh.', 'success');
-            } else {
-                initCropBox();
-                drawImage();
-                showMessage('Không thể tự động nhận diện cạnh ảnh rõ ràng. Khung cắt được đặt lại là Toàn bộ ảnh.', 'error');
-            }
+            // Tính toán kích thước khung cắt mặc định (khoảng 70% chiều ngang và chiều cao của ảnh)
+            const defaultCropWidth = canvasW * 0.7;
+            const defaultCropHeight = canvasH * 0.7;
+
+            // Tính toán tọa độ để đặt khung cắt vào giữa ảnh
+            const defaultX = (canvasW - defaultCropWidth) / 2;
+            const defaultY = (canvasH - defaultCropHeight) / 2;
+
+            const newCropBox = {
+                x: defaultX,
+                y: defaultY,
+                width: defaultCropWidth,
+                height: defaultCropHeight
+            };
+
+            // Cập nhật khung cắt và vẽ lại ảnh
+            initCropBox(newCropBox);
+            drawImage();
+
+            showMessage('Đã đặt khung cắt mặc định ở giữa ảnh. Bạn có thể kéo thả để tinh chỉnh.', 'success');
         });
 
         resetCropButton.addEventListener('click', () => {
